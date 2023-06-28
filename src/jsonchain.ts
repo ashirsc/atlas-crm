@@ -10,17 +10,7 @@ import { LLMChain } from "langchain/chains";
 import { OpenAI } from "langchain/llms/openai";
 
 export async function jsonFormatGPT(badJson: string, additionalInstuctrions: string = ""): Promise<string> {
-    // const chat = new ChatOpenAI({ temperature: 0 });
-    // const chatPrompt = ChatPromptTemplate.fromPromptMessages([
-    //     SystemMessagePromptTemplate.fromTemplate(
-    //         "You are a helpful assistant that formats data as JSON." + additionalInstuctrions 
-    //     ),
-    //     HumanMessagePromptTemplate.fromTemplate("{json}"),
-    // ]);
-    // const chain = new LLMChain({
-    //     prompt: chatPrompt,
-    //     llm: chat,
-    // });
+  
 
 
     const model = new OpenAI({ temperature: 0.1 });
