@@ -1,2 +1,7 @@
 .env
 node_modules/
+public/
+data/
+downloads/
+build/
+ux/

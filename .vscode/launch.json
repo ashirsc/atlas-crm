@@ -20,6 +20,23 @@
                 "group": "TS",
                 "order": 0
             },
+        },
+        {
+            "name": "Current TSM File",
+            "type": "node",
+            "request": "launch",
+            "args": ["${relativeFile}"],
+            "runtimeArgs": ["--loader", "ts-node/esm"],
+            "sourceMaps": true,
+            "cwd": "${workspaceRoot}",
+            // "cwd": "${workspaceFolder}/src/Extension/e2etests/playwright",
+            "protocol": "inspector",
+            "presentation": {
+                "group": "TS",
+                "order": 0
+            },
+            "localRoot": null
         }
+
     ]
 }

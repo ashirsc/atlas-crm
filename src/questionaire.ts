@@ -1,11 +1,11 @@
 import { HumanChatMessage, SystemChatMessage } from "langchain/schema";
 
-import { ChatOpenAI } from "langchain/chat_models/openai";
+import { ChatOpenAI, } from "langchain/chat_models/openai";
 import fs from 'fs';
-import { jsonFormatGPT } from "./jsonchain";
+import { jsonFormatGPT } from "./jsonchain.js";
 import path from 'path';
 
-const chat = new ChatOpenAI({ temperature: 0 });
+const chat = new ChatOpenAI({ temperature: 0, modelName: "gpt-3.5-turbo" });
 export interface Question {
     text: string,
     type: string,
@@ -83,6 +83,88 @@ If the answer to the question is unknown or wasn't provided, answer null with no
     return qs.map((item, index) => ({ ...item, ans: answerArray[index] }));
 
 
+
+}
+
+enum CustomerLabels {
+    qualified = "Qualified lead",
+    unqualified = "Unqualified",
+    atNeed = "At need",
+    preNeed = "Pre need",
+    imminentNeed = "Imminent need",
+    earnestShopper = "Earnest shopper",
+    priceShopper = "Price shopper"
+}
+
+export async function tag(transcription: string) {
+
+    async function shopperType():Promise<CustomerLabels> {
+        const typeResponse = await chat.call([
+            new SystemChatMessage(`You are a bot that answers questions about phone calls to a funeral home.
+    If someone has passed away, they are "${CustomerLabels.atNeed}".
+    If someone is expected to pass soon(within the next couple of days or months), they are "${CustomerLabels.imminentNeed}".
+    If no one is passing soon but the caller is making advanced arrangements, they are "${CustomerLabels.preNeed}"
+    Answer with '${CustomerLabels.atNeed}', '${CustomerLabels.imminentNeed}', or '${CustomerLabels.preNeed}' and nothing else.`),
+            new HumanChatMessage(transcription)
+        ])
+
+        // console.log('typeResponse.text', typeResponse.text)
+        return typeResponse.text as CustomerLabels
+    }
+
+    let tags: CustomerLabels[] = []
+
+    const qualifiedResponse = await chat.call([
+        new SystemChatMessage(`You are a bot that answers questions about phone calls to a funeral home.
+if the caller is calling with the motivation to learn more about a funeral home's services because they are needing or wanting to make funeral service arrangements - they are qualified.
+They are not qualified if they are calling to ask questions such as: What time is the service for Susan Smith? Or my aunt's body was taken to a funeral home yesterday, is she at your funeral home? Questions such as these are not qualified.
+
+Answer with '${CustomerLabels.qualified}' or '${CustomerLabels.unqualified}' and nothing else.`),
+        new HumanChatMessage(transcription)
+    ])
+
+    // console.log('qualifiedResponse.text', qualifiedResponse.text)
+    if (qualifiedResponse.text as CustomerLabels == CustomerLabels.qualified) {
+        tags.push(CustomerLabels.qualified)
+
+        const timelineResponse = await chat.call([
+            new SystemChatMessage(`You are a bot that answers questions about phone calls to a funeral home.
+    If someone has passed away, they are "${CustomerLabels.atNeed}".
+    If someone is expected to pass soon(within the next couple of days or months), they are "${CustomerLabels.imminentNeed}".
+    If no one is passing soon but the caller is making advanced arrangements, they are "${CustomerLabels.preNeed}"
+    Answer with '${CustomerLabels.atNeed}', '${CustomerLabels.imminentNeed}', or '${CustomerLabels.preNeed}' and nothing else.`),
+            new HumanChatMessage(transcription)
+        ])
+
+        let type: CustomerLabels;
+        // console.log('timelineResponse.text', timelineResponse.text)
+        switch (timelineResponse.text) {
+            case CustomerLabels.atNeed:
+                tags.push(CustomerLabels.atNeed)
+                type = await shopperType()
+                tags.push(type)
+                break;
+            case CustomerLabels.imminentNeed:
+                tags.push(CustomerLabels.imminentNeed)
+                type = await shopperType()
+                tags.push(type)
+
+                break;
+            case CustomerLabels.preNeed:
+                tags.push(CustomerLabels.preNeed)
+
+                break;
+
+            default:
+                console.error("Bad timeline tag: ", timelineResponse.text)
+                break;
+        }
+    } else {
+        tags.push(CustomerLabels.unqualified)
+    }
+
+
+    return tags
 
 }
 
