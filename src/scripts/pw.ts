@@ -1,7 +1,7 @@
 import "dotenv/config"
 
 import { PhoneCall, PrismaClient, SubAccount, } from '@prisma/client'
-import { deleteFiles, get2faCode, getYyyyMmDdDate, parseHighLevelDateTime, readFilesFromDirectory } from "./utils.js";
+import { asyncFilter, deleteFiles, get2faCode, getYyyyMmDdDate, parseHighLevelDateTime, readFilesFromDirectory } from "./utils.js";
 import { fetchUserByPhoneNumber, refreshToken, tagUser } from "../highlevel.js";
 import { fill, tag } from "../questionaire.js";
 import { loadAudioFromFile, transcribe } from "../audio.js";
@@ -38,16 +38,16 @@ async function fetchAudioFiles(accountId: string, saveDirectory: string, signInE
   await page.getByRole('button', { name: 'Confirm Code', exact: true }).click();
 
 
-
+//  await context.storageState
 
   await page.getByRole('link', { name: 'Reporting' }).click();
   await page.getByRole('link', { name: 'Call Reporting' }).click();
 
-  // await page.getByPlaceholder('Start Date').fill(getYyyyMmDdDate());
-  await page.getByPlaceholder('Start Date').fill("2023-07-25");
+  await page.getByPlaceholder('Start Date').fill(getYyyyMmDdDate());
+  // await page.getByPlaceholder('Start Date').fill("2023-07-25");
   // const responsePromise = page.waitForResponse("https://services.leadconnectorhq.com/reporting/calls/get-inbound-call-sources")
-  // await page.getByPlaceholder('End Date').fill(getYyyyMmDdDate());
-  await page.getByPlaceholder('End Date').fill("2023-07-25");
+  await page.getByPlaceholder('End Date').fill(getYyyyMmDdDate());
+  // await page.getByPlaceholder('End Date').fill("2023-07-25");
   // await responsePromise;
   await page.waitForTimeout(1_000)
 
@@ -65,13 +65,18 @@ async function fetchAudioFiles(accountId: string, saveDirectory: string, signInE
   const rowSelector = await callsTable.$$('.n-data-table-tr')
   const callRows = rowSelector.slice(1)
 
-  if (callRows.length > 0) {
-    await page.waitForSelector('#buttons')
-  }
+  
+  const answeredCallRows = await asyncFilter(callRows, async (row) => {
+    const callStatusElement = await row.$('[data-col-key="callStatus"] div')
+    const status = await callStatusElement?.innerHTML()
+    return status == "Answered"
+  })
+    
+    if (answeredCallRows.length > 0) {
+      await page.waitForSelector('#buttons')
+    }
 
-
-
-  for (let row of callRows) {
+  for (let row of answeredCallRows) {
 
     let dateTimeElements = await row.$$('[data-col-key="dateTime"] div');
     let dateString = await dateTimeElements[1]?.innerHTML()
@@ -159,7 +164,7 @@ async function handleTokenRefresh(subAccount: SubAccount) {
 async function main() {
 
   let subAccounts: SubAccount[] = await prisma.subAccount.findMany();
-  subAccounts = subAccounts.filter((sa) => sa.locationId === "LjVnKCbMGn48Mvnzi7dG")
+  subAccounts = subAccounts.filter((sa) => sa.locationId !== "7YwRjDg4VlGdEFeb4fOL")
 
 
   for (let subAccount of subAccounts) {

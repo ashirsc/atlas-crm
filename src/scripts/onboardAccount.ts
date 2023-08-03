@@ -43,14 +43,14 @@ async function main() {
         const botPassword = generator.generate({
             length: 10,
             numbers: true,
-            symbols: true
+            symbols: true,
+            strict:true
         })
         const botEmail = `${answers.locationId}@ses.dnjsolutions.dev`
         await prisma.subAccount.create({
             data: {
                 locationId: answers.locationId,
                 ownerId: parseInt(answers.ownerId as unknown as string),
-                // ownerId: answers.ownerId,
                 accessToken: answers.accessToken,
                 refreshToken: answers.refreshToken,
                 botEmail,

@@ -122,3 +122,9 @@ export function parseHighLevelDateTime(dateString, timeString):Date {
 
     return new Date(year, month, day, hours, minutes);
 }
+
+
+export async function asyncFilter<T>(array: T[], predicate: (value: T) => Promise<boolean>): Promise<T[]> {
+    const results: boolean[] = await Promise.all(array.map(predicate));
+    return array.filter((_, index) => results[index]);
+}

@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "ts-node --esm src/server/index.ts",
-    "pw": "ts-node --esm --experimental-specifier-resolution=node src/scripts/pw.ts"
+    "pw": "ts-node --esm --experimental-specifier-resolution=node src/scripts/pw.ts",
+    "onboard": "ts-node --esm src/scripts/onboardAccount.ts"
   },
   "author": "",
   "license": "ISC",
