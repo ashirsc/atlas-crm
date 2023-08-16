@@ -49,6 +49,3 @@ model PhoneCall {
   tags            String[]
   @@id([callTime, callerNumber, accountId])
 }
-
-
-

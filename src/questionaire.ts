@@ -5,7 +5,8 @@ import fs from 'fs';
 import { jsonFormatGPT } from "./jsonchain.js";
 import path from 'path';
 
-const chat = new ChatOpenAI({ temperature: 0, modelName: "gpt-3.5-turbo" });
+// const chat = new ChatOpenAI({ temperature: 0, modelName: "gpt-3.5-turbo" });
+const chat = new ChatOpenAI({ temperature: 0, modelName: "gpt-4" });
 export interface Question {
     text: string,
     type: string,
@@ -98,13 +99,13 @@ enum CustomerLabels {
 
 export async function tag(transcription: string) {
 
-    async function shopperType():Promise<CustomerLabels> {
+    async function shopperType(): Promise<CustomerLabels> {
         const typeResponse = await chat.call([
             new SystemChatMessage(`You are a bot that answers questions about phone calls to a funeral home.
-    If someone has passed away, they are "${CustomerLabels.atNeed}".
-    If someone is expected to pass soon(within the next couple of days or months), they are "${CustomerLabels.imminentNeed}".
-    If no one is passing soon but the caller is making advanced arrangements, they are "${CustomerLabels.preNeed}"
-    Answer with '${CustomerLabels.atNeed}', '${CustomerLabels.imminentNeed}', or '${CustomerLabels.preNeed}' and nothing else.`),
+If someone has passed away, they are "${CustomerLabels.atNeed}".
+If someone is expected to pass soon(within the next couple of days or months), they are "${CustomerLabels.imminentNeed}".
+If no one is passing soon but the caller is making advanced arrangements, they are "${CustomerLabels.preNeed}"
+Answer with '${CustomerLabels.atNeed}', '${CustomerLabels.imminentNeed}', or '${CustomerLabels.preNeed}' and nothing else.`),
             new HumanChatMessage(transcription)
         ])
 
@@ -129,10 +130,10 @@ Answer with '${CustomerLabels.qualified}' or '${CustomerLabels.unqualified}' and
 
         const timelineResponse = await chat.call([
             new SystemChatMessage(`You are a bot that answers questions about phone calls to a funeral home.
-    If someone has passed away, they are "${CustomerLabels.atNeed}".
-    If someone is expected to pass soon(within the next couple of days or months), they are "${CustomerLabels.imminentNeed}".
-    If no one is passing soon but the caller is making advanced arrangements, they are "${CustomerLabels.preNeed}"
-    Answer with '${CustomerLabels.atNeed}', '${CustomerLabels.imminentNeed}', or '${CustomerLabels.preNeed}' and nothing else.`),
+If someone has passed away, they are "${CustomerLabels.atNeed}".
+If someone is expected to pass soon(within the next couple of days or months), they are "${CustomerLabels.imminentNeed}".
+If no one is passing soon but the caller is making advanced arrangements, they are "${CustomerLabels.preNeed}"
+Answer with '${CustomerLabels.atNeed}', '${CustomerLabels.imminentNeed}', or '${CustomerLabels.preNeed}' and nothing else.`),
             new HumanChatMessage(transcription)
         ])
 

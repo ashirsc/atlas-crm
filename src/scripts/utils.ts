@@ -78,7 +78,6 @@ export async function get2faCode() {
     // Get the key of the most recent object
     const mostRecentObjectKey = objects[0].Key;
 
-    console.log('Most Recent Object Key: ', mostRecentObjectKey);
     const oneMinuteAgo = new Date(Date.now() - 60000);
 
     // Fetch the object

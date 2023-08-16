@@ -1,7 +1,7 @@
 import { Configuration, OpenAIApi } from "openai";
-import { createReadStream, readdirSync, } from "fs";
-import { readFile, writeFile, } from 'fs/promises'
+import { access, readFile, writeFile, } from 'fs/promises'
 
+import { createReadStream } from "fs";
 import path from "path";
 
 const configuration = new Configuration({
@@ -12,10 +12,10 @@ const openai = new OpenAIApi(configuration);
 
 
 export const transcribe = async (audio: File) => {
-    
+
     try {
         const maxBodyLength = 25 * 1024 * 1024 // 25MBs
-        const resp = await openai.createTranscription(audio, "whisper-1",undefined,undefined,undefined,undefined,{maxBodyLength});
+        const resp = await openai.createTranscription(audio, "whisper-1", undefined, undefined, undefined, undefined, { maxBodyLength });
         return resp.data.text
 
     } catch (e) {
@@ -28,13 +28,17 @@ export const transcribe = async (audio: File) => {
 
 
 
-export const loadAudioFromFile = (filename: string): File => {
+export const loadAudioFromFile = async (filename: string): Promise<File | undefined> => {
     try {
+        const fileAccess = await access(filename).then(() => true).catch(() => false)
+        if (!fileAccess) {
+            return
+        }
 
         return createReadStream(path.join(filename)) as unknown as File
     } catch (error) {
         console.log(error)
-        throw new Error("Couldn't load audio from " + filename);
+        return
 
     }
 

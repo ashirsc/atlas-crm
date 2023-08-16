@@ -1,0 +1,73 @@
+{
+  "cookies": [
+    {
+      "name": "_ga",
+      "value": "GA1.2.79069225.1691550472",
+      "domain": ".gohighlevel.com",
+      "path": "/",
+      "expires": 1726722021.196821,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_gid",
+      "value": "GA1.2.569358359.1691550472",
+      "domain": ".gohighlevel.com",
+      "path": "/",
+      "expires": 1692248421,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_gat",
+      "value": "1",
+      "domain": ".gohighlevel.com",
+      "path": "/",
+      "expires": 1692162081,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ga_MX6Z1X7L8K",
+      "value": "GS1.2.1692162021.97.1.1692162021.0.0.0",
+      "domain": ".gohighlevel.com",
+      "path": "/",
+      "expires": 1726722021.391391,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "NID",
+      "value": "511=GpScD1hAmYdKGQfVs6qCyzLnD5vpesjznkcf9GNxagcyc24kFG3b-aKFdQaAFPBhOcf90b1ZNiK-NW2Q_t39GU5cacJi5BUiXDaP2Zxp2xznNgxUd50QILqvCx_2nrnWCIyNVwCreq73RAkYUWQnlT8AXkdLH4SntmFeVubwXqk",
+      "domain": ".google.com",
+      "path": "/",
+      "expires": 1707973222.036325,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "https://app.gohighlevel.com",
+      "localStorage": [
+        {
+          "name": "deviceId",
+          "value": "\"5a8f51a8-a3b7-4a30-b9a3-f7566c7ecf12\""
+        },
+        {
+          "name": "locale",
+          "value": "en-US"
+        },
+        {
+          "name": "proxyLoginCount",
+          "value": "0"
+        }
+      ]
+    }
+  ]
+}

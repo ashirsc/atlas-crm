@@ -7,16 +7,53 @@ import { fill, tag } from "../questionaire.js";
 import { loadAudioFromFile, transcribe } from "../audio.js";
 
 import { chromium } from "playwright"
+import fs from 'fs/promises';
 import path from "path"
 
 const prisma = new PrismaClient()
 
+async function loadStorageState(accountId: string): Promise<any | undefined> {
+  const filePath = path.join('.auth', `${accountId}.storagestate.json`);
 
+  try {
+    // Check if the file exists
+    await fs.access(filePath);
+
+    // Read the file
+    const fileContent = await fs.readFile(filePath, 'utf8');
+
+    // Parse the content
+    const parsedContent = JSON.parse(fileContent);
+
+    return parsedContent;
+  } catch (error) {
+    console.error(`An error occurred while loading the file: ${error}`);
+    return;
+  }
+}
+
+async function saveStorageState(accountId: string, state: object): Promise<void> {
+  const filePath = path.join('.auth', `${accountId}.storagestate.json`);
+
+  // Ensure the .auth directory exists
+  await fs.mkdir('.auth', { recursive: true });
+
+  // Stringify the state object
+  const fileContent = JSON.stringify(state, null, 2);
+
+  // Write the content to the file
+  await fs.writeFile(filePath, fileContent, 'utf8');
+
+  console.log(`Storage state saved to ${filePath}`);
+}
 
 
 async function fetchAudioFiles(accountId: string, saveDirectory: string, signInEmail: string, signInPassword: string): Promise<PhoneCall[]> {
   const browser = await chromium.launch({ headless: false, slowMo: 0, });
-  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, acceptDownloads: true });
+
+  let storageState = await loadStorageState(accountId)
+
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, acceptDownloads: true, storageState });
   const page = await context.newPage();
 
   await page.goto('https://app.gohighlevel.com/');
@@ -38,16 +75,16 @@ async function fetchAudioFiles(accountId: string, saveDirectory: string, signInE
   await page.getByRole('button', { name: 'Confirm Code', exact: true }).click();
 
 
-//  await context.storageState
+  saveStorageState(accountId, await context.storageState())
 
   await page.getByRole('link', { name: 'Reporting' }).click();
   await page.getByRole('link', { name: 'Call Reporting' }).click();
 
   await page.getByPlaceholder('Start Date').fill(getYyyyMmDdDate());
-  // await page.getByPlaceholder('Start Date').fill("2023-07-25");
+  // await page.getByPlaceholder('Start Date').fill("2023-08-05");
   // const responsePromise = page.waitForResponse("https://services.leadconnectorhq.com/reporting/calls/get-inbound-call-sources")
   await page.getByPlaceholder('End Date').fill(getYyyyMmDdDate());
-  // await page.getByPlaceholder('End Date').fill("2023-07-25");
+  // await page.getByPlaceholder('End Date').fill("2023-08-05");
   // await responsePromise;
   await page.waitForTimeout(1_000)
 
@@ -65,16 +102,16 @@ async function fetchAudioFiles(accountId: string, saveDirectory: string, signInE
   const rowSelector = await callsTable.$$('.n-data-table-tr')
   const callRows = rowSelector.slice(1)
 
-  
+
   const answeredCallRows = await asyncFilter(callRows, async (row) => {
     const callStatusElement = await row.$('[data-col-key="callStatus"] div')
     const status = await callStatusElement?.innerHTML()
     return status == "Answered"
   })
-    
-    if (answeredCallRows.length > 0) {
-      await page.waitForSelector('#buttons')
-    }
+
+  if (answeredCallRows.length > 0) {
+    await page.waitForSelector('#buttons')
+  }
 
   for (let row of answeredCallRows) {
 
@@ -165,6 +202,7 @@ async function main() {
 
   let subAccounts: SubAccount[] = await prisma.subAccount.findMany();
   subAccounts = subAccounts.filter((sa) => sa.locationId !== "7YwRjDg4VlGdEFeb4fOL")
+  // subAccounts = subAccounts.filter((sa) => sa.locationId == "ivxoOmOTUpGY3NLxk6hu")
 
 
   for (let subAccount of subAccounts) {
@@ -186,29 +224,53 @@ async function main() {
     });
 
 
-    const taggingPromises = untaggedCalls.map(async (phoneCall) => {
-      const transcriptionPromise = transcribe(loadAudioFromFile(phoneCall.filepath));
+    const phoneNumbers = new Set<string>();
+    untaggedCalls.forEach((call) => phoneNumbers.add(call.callerNumber))
+    const phoneNumberArray = Array.from(phoneNumbers)
+
+    const highlevelContactsPromises = phoneNumberArray.map(phoneNumber => fetchUserByPhoneNumber(
+      subAccount.accessToken as string,
+      subAccount.locationId,
+      phoneNumber
+    ));
 
 
-      // prisma.phoneCall()
-      const highlevelUserPromise = fetchUserByPhoneNumber(
-        subAccount.accessToken as string,
-        subAccount.locationId,
-        phoneCall.callerNumber
-      );
-
-      const [transcription, highlevelUser] = await Promise.all([transcriptionPromise, highlevelUserPromise]);
+    const transcriptionPromises = untaggedCalls.map(async (phoneCall) => {
+      const audioFile = await loadAudioFromFile(phoneCall.filepath)
+      if (!audioFile) return
+      const transcriptionPromise = transcribe(audioFile);
 
 
-
-      if (highlevelUser) {
-        const tags = await tag(transcription);
-        const tagRes = await tagUser(subAccount.accessToken as string, highlevelUser.id, tags);
-
-        if (tagRes) {
+      return transcriptionPromise
 
 
-          prisma.phoneCall.update({
+
+    });
+
+    const highlevelContacts = await Promise.all(highlevelContactsPromises)
+    const transcriptions = await Promise.all(transcriptionPromises);
+
+    const transcribedCalls = untaggedCalls.map((call, i) => {
+      call.transcription = transcriptions[i] as string
+      return call
+    })
+
+    for (let i = 0; i < phoneNumbers.size; i++) {
+      const number = phoneNumberArray[i]
+      const calls = transcribedCalls.filter((call) => call.callerNumber == number)
+      const contact = highlevelContacts[i]
+
+      const fullTranscription = calls.map(c => c.transcription).join("\n")
+
+      const tags = await tag(fullTranscription);
+      const tagRes = await tagUser(subAccount.accessToken as string, contact.id, tags);
+
+      if (tagRes) {
+
+        calls.forEach(async phoneCall => {
+
+
+          await prisma.phoneCall.update({
             where: {
               callTime_callerNumber_accountId: {
                 callTime: phoneCall.callTime,
@@ -217,16 +279,17 @@ async function main() {
               },
             },
             data: {
-              transcription,
+              transcription: fullTranscription,
               tagged: true,
               tags: tagRes?.tagsAdded
             },
           }).catch(err => console.error("Failed to update call transcription", err))
-        }
+        })
       }
-    });
 
-    await Promise.all(taggingPromises);
+    }
+
+
 
     await deleteFiles(directoryPath).catch(console.error)
 
