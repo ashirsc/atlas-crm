@@ -38,19 +38,19 @@ export function readFilesFromDirectory(directoryPath: string): string[] {
 export async function deleteFiles(directory: string) {
     // Read the contents of the directory
     const files = await fs.promises.readdir(directory);
-  
+
     // Create an array of promises, each one being a file deletion
     const deletePromises = files.map((file) => {
-      // Generate the full file path
-      const filePath = path.join(directory, file);
-  
-      // Delete the file and return the Promise
-      return fs.promises.unlink(filePath);
+        // Generate the full file path
+        const filePath = path.join(directory, file);
+
+        // Delete the file and return the Promise
+        return fs.promises.unlink(filePath);
     });
-  
+
     // Wait for all files to be deleted
     await Promise.all(deletePromises);
-  }
+}
 
 
 export async function get2faCode() {
@@ -84,10 +84,23 @@ export async function get2faCode() {
     const getObjectCommand = new GetObjectCommand({
         Bucket: BUCKET_NAME,
         Key: mostRecentObjectKey,
-        IfModifiedSince: oneMinuteAgo
+        // IfModifiedSince: oneMinuteAgo
     });
 
-    const { Body: objectStream } = await s3Client.send(getObjectCommand);
+    // const { Body: objectStream } = await s3Client.send(getObjectCommand);
+    let getRes
+    // try {
+
+    getRes = await s3Client.send(getObjectCommand);
+    // } catch (error) {
+
+    //     // if ((error as any).$metadata.httpStatusCode == 304) {
+    //     //     await new Promise<void>(resolve => setTimeout(resolve, 5_000));
+    //     //     getRes = await s3Client.send(getObjectCommand);
+    //     // }
+    // }
+    const objectStream = getRes.Body
+
     const objectData = await objectStream?.transformToString()
 
     const securityCodeRegex = /Your login security code: (\d+)/;
@@ -102,7 +115,7 @@ export async function get2faCode() {
     return securityCode
 }
 
-export function parseHighLevelDateTime(dateString, timeString):Date {
+export function parseHighLevelDateTime(dateString, timeString): Date {
     // Remove the 'PM' from time and split it into hours and minutes
     let timeParts = timeString.slice(0, -3).split(':');
     let hours = parseInt(timeParts[0]);

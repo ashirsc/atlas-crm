@@ -33,7 +33,7 @@ const sendUserSMS = (userId: string) => {
 
 }
 
-type POSTTagsResponse = {
+export type POSTTagsResponse = {
     tags: string[];
     tagsAdded: string[];
     traceId: string;
@@ -50,6 +50,21 @@ export async function tagUser(accessToken: string, userId: string, tags: string[
 
     } catch (error) {
         console.log(`Failed to add tags [${tags.join()}] to ${userId}`)
+        return
+    }
+}
+export async function addUserNote(accessToken: string, userId: string, note: string): Promise<POSTTagsResponse | undefined> {
+    try {
+
+        const res = await apiV2.post<POSTTagsResponse>(`/contacts/${userId}/notes`, JSON.stringify({body:note}), {
+            headers: {
+                Authorization: `Bearer ${accessToken}`
+            }
+        })
+        return res.data
+
+    } catch (error) {
+        console.log(`Failed to add note to ${userId}`)
         return
     }
 }

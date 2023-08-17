@@ -1,5 +1,6 @@
 import * as schedule from "node-schedule";
 
+import chalk from "chalk";
 import { spawn } from "child_process";
 
 schedule.scheduleJob(
@@ -11,19 +12,20 @@ schedule.scheduleJob(
     const command = "npm"; // Example command; you can replace this with any command you want to run
     const args = ["run", "pw"];
 
-    const childProcess = spawn(command, args, {shell:true});
+    console.log(chalk.blue(`Staring run at ${Date.now().toLocaleString()}`));
+    const childProcess = spawn(command, args, { shell: true });
 
     childProcess.stdout.on("data", (data) => {
-      console.log(`stdout: ${data}`);
+      console.log(data);
     });
 
     childProcess.stderr.on("data", (data) => {
-      console.error(`stderr: ${data}`);
+      console.error(chalk.red(data));
     });
 
     childProcess.on("close", (code) => {
+      console.log(chalk.blue(`Finished run at ${Date.now().toLocaleString()}`));
       console.log(`child process exited with code ${code}`);
     });
   }
 );
-

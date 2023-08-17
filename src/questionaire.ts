@@ -81,13 +81,14 @@ If the answer to the question is unknown or wasn't provided, answer null with no
         }
     }
 
-    return qs.map((item, index) => ({ ...item, ans: answerArray[index] }));
+    // return qs.map((item, index) => ({ ...item, ans: answerArray[index] }));
+    return answerArray;
 
 
 
 }
 
-enum CustomerLabels {
+export enum CustomerLabels {
     qualified = "Qualified lead",
     unqualified = "Unqualified",
     atNeed = "At need",

@@ -80,7 +80,7 @@ passport.use(
 
                         accessToken,
                         refreshToken,
-                        locationId: "7YwRjDg4VlGdEFeb4fOL",
+                        locationId: "",
                         ownerId: 1,
                         botEmail: "atlasbot@ses.dnjsolutions.dev",
                         botPassword: "Atlasbot;93"

@@ -24,6 +24,13 @@ async function main() {
             name: 'ownerId',
             message: "What's your owner ID?",
         },
+        
+        {
+            type: 'input',
+            name: 'botAccountId',
+            message: "What's the botAccountId",
+        },
+
         {
             type: 'password',
             name: 'accessToken',
@@ -40,27 +47,21 @@ async function main() {
 
     const prompt = createPromptModule()
     prompt(questions).then(async (answers: SubAccount) => {
-        const botPassword = generator.generate({
-            length: 10,
-            numbers: true,
-            symbols: true,
-            strict:true
-        })
-        const botEmail = `${answers.locationId}@ses.dnjsolutions.dev`
+        
         await prisma.subAccount.create({
             data: {
                 locationId: answers.locationId,
                 ownerId: parseInt(answers.ownerId as unknown as string),
                 accessToken: answers.accessToken,
                 refreshToken: answers.refreshToken,
-                botEmail,
-                botPassword
+                botEmail:"",
+                botPassword:"",
+                botAccountId: parseInt(answers.botAccountId as unknown as string)
 
             }
         });
 
         console.log('Account information has been saved.');
-        console.log(`Please set up the following user in the account ${answers.locationId}`,{botEmail, botPassword})
     })
 
 }
