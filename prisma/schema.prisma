@@ -39,6 +39,7 @@ model SubAccount {
 }
 
 model PhoneCall {
+  id            Int      @id @default(autoincrement())
   callTime      DateTime
   callerNumber  String
   callerName    String
@@ -47,15 +48,13 @@ model PhoneCall {
   filepath      String
   tagged        Boolean
   tags          String[]
-
-  @@id([callTime, callerNumber, accountId])
 }
 
 model BotAccount {
-  id                   Int          @id @default(autoincrement()) 
-  botEmail             String
-  botPassword          String
-  owner                User?        @relation(fields: [ownerId], references: [id])
-  ownerId              Int?         @unique
-  subAccounts  SubAccount[]
+  id          Int          @id @default(autoincrement())
+  botEmail    String
+  botPassword String
+  owner       User?        @relation(fields: [ownerId], references: [id])
+  ownerId     Int?         @unique
+  subAccounts SubAccount[]
 }

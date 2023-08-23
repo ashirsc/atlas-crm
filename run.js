@@ -12,11 +12,13 @@ schedule.scheduleJob(
     const command = "npm"; // Example command; you can replace this with any command you want to run
     const args = ["run", "pw"];
 
-    console.log(chalk.blue(`Staring run at ${Date.now().toLocaleString()}`));
+    const startTime = new Date();
+
+    console.log(chalk.blueBright(`Staring run at ${startTime.toLocaleString('en-US')}`));
     const childProcess = spawn(command, args, { shell: true });
 
     childProcess.stdout.on("data", (data) => {
-      console.log(data);
+      console.log(data.toString());
     });
 
     childProcess.stderr.on("data", (data) => {
@@ -24,7 +26,8 @@ schedule.scheduleJob(
     });
 
     childProcess.on("close", (code) => {
-      console.log(chalk.blue(`Finished run at ${Date.now().toLocaleString()}`));
+      const finishTime = new Date()
+      console.log(chalk.blueBright(`Finished run at ${finishTime.toLocaleString('en-US')}`));
       console.log(`child process exited with code ${code}`);
     });
   }

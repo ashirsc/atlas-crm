@@ -41,12 +41,12 @@ export type POSTTagsResponse = {
 export async function tagUser(accessToken: string, userId: string, tags: string[]): Promise<POSTTagsResponse | undefined> {
     try {
 
-        const res = await apiV2.post<POSTTagsResponse>(`/contacts/${userId}/tags`, JSON.stringify({ tags }), {
+        const res = await apiV2.post<string>(`/contacts/${userId}/tags`, JSON.stringify({ tags }), {
             headers: {
                 Authorization: `Bearer ${accessToken}`
             }
         })
-        return res.data
+        return JSON.parse(res.data) as POSTTagsResponse
 
     } catch (error) {
         console.log(`Failed to add tags [${tags.join()}] to ${userId}`)
@@ -56,12 +56,12 @@ export async function tagUser(accessToken: string, userId: string, tags: string[
 export async function addUserNote(accessToken: string, userId: string, note: string): Promise<POSTTagsResponse | undefined> {
     try {
 
-        const res = await apiV2.post<POSTTagsResponse>(`/contacts/${userId}/notes`, JSON.stringify({body:note}), {
+        const res = await apiV2.post<string>(`/contacts/${userId}/notes`, JSON.stringify({body:note}), {
             headers: {
                 Authorization: `Bearer ${accessToken}`
             }
         })
-        return res.data
+        return JSON.parse(res.data)
 
     } catch (error) {
         console.log(`Failed to add note to ${userId}`)
