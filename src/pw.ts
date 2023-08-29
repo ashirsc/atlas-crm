@@ -1,11 +1,11 @@
 import "dotenv/config"
 
 import { BotAccount, PhoneCall, PrismaClient, SubAccount, User } from '@prisma/client'
-import { CustomerLabels, fill, tag } from "../questionaire.js";
+import { CustomerLabels, fill, questionaireToString, tag } from "./questionaire.js";
 import { Page, chromium } from "playwright"
-import { addUserNote, fetchUserByPhoneNumber, refreshToken, tagUser } from "../highlevel.js";
+import { addUserNote, fetchUserByPhoneNumber, refreshToken, tagUser } from "./highlevel.js";
 import { asyncFilter, deleteFiles, get2faCode, getYyyyMmDdDate, parseHighLevelDateTime, readFilesFromDirectory } from "./utils.js";
-import { loadAudioFromFile, transcribe } from "../audio.js";
+import { loadAudioFromFile, transcribe } from "./audio.js";
 
 import fs from 'fs/promises';
 import path from "path"
@@ -51,15 +51,7 @@ async function saveStorageState(accountId: string, state: object): Promise<void>
 
   console.log(`Storage state saved to ${filePath}`);
 }
-
-async function fetchBotAccountAudioFiles(botAccount: BotAccount, saveDirectory: string, existingCalls: PhoneCall[]): Promise<CreatePhoneCall[]> {
-  const browser = await chromium.launch({ headless: false, slowMo: 300, });
-
-  // let storageState = await loadStorageState(botAccount.botEmail.split("@")[0])
-
-  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, acceptDownloads: true });
-  const page = await context.newPage();
-
+export async function login(page, botAccount) {
   await page.goto('https://app.gohighlevel.com/');
   await page.getByPlaceholder('Your email address').click();
   await page.getByPlaceholder('Your email address').fill(botAccount.botEmail);
@@ -67,7 +59,7 @@ async function fetchBotAccountAudioFiles(botAccount: BotAccount, saveDirectory: 
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 
   await page.getByRole('button', { name: 'Send Security Code' }).click();
-  await page.waitForTimeout(5_000)
+  await page.waitForTimeout(10_000)
 
   let code: string
   try {
@@ -84,10 +76,20 @@ async function fetchBotAccountAudioFiles(botAccount: BotAccount, saveDirectory: 
   await page.locator('div:nth-child(5) > .m-2').fill(code[4]);
   await page.locator('div:nth-child(6) > .m-2').fill(code[5]);
   await page.getByRole('button', { name: 'Confirm Code', exact: true }).click();
+}
+
+export async function fetchBotAccountAudioFiles(botAccount: BotAccount, saveDirectory: string, existingCalls: PhoneCall[]): Promise<CreatePhoneCall[]> {
+  const browser = await chromium.launch({ headless: false, slowMo: 300, });
+
+  // let storageState = await loadStorageState(botAccount.botEmail.split("@")[0])
+
+  const context = await browser.newContext({ viewport: { width: 1920, height: 1080 }, acceptDownloads: true });
+  const page = await context.newPage();
+
+  await login(page, botAccount)
 
   await page.waitForURL("**/dashboard")
 
-  // saveStorageState(botAccount.botEmail.split("@")[0], await context.storageState())
 
 
   let phoneCalls: CreatePhoneCall[] = []
@@ -101,7 +103,7 @@ async function fetchBotAccountAudioFiles(botAccount: BotAccount, saveDirectory: 
   return phoneCalls
 }
 
-async function downloadAudio(page: Page, saveDirectory, locationId, existingCalls: PhoneCall[]): Promise<CreatePhoneCall[]> {
+export async function downloadAudio(page: Page, saveDirectory, locationId, existingCalls: PhoneCall[]): Promise<CreatePhoneCall[]> {
   // await page.getByRole('link', { name: 'Reporting' }).click();
   // await page.getByRole('link', { name: 'Call Reporting' }).click();
 
@@ -159,7 +161,7 @@ async function downloadAudio(page: Page, saveDirectory, locationId, existingCall
 
     if (existingCalls.findIndex(ec => {
       const sameNumber = ec.callerNumber == callerNumber
-      const sameTime =  ec.callTime.getTime() == timestamp.getTime()
+      const sameTime = ec.callTime.getTime() == timestamp.getTime()
       return sameTime && sameNumber
     }) > -1) continue
 
@@ -202,7 +204,7 @@ async function downloadAudio(page: Page, saveDirectory, locationId, existingCall
 
 
 
-async function handleTokenRefresh(subAccount: SubAccount) {
+export async function handleTokenRefresh(subAccount: SubAccount) {
   const now = new Date();
 
   // need to refresh
@@ -232,34 +234,9 @@ async function handleTokenRefresh(subAccount: SubAccount) {
 }
 
 
-
-async function main() {
-
-  const directoryPath = 'downloads/';
-
+export async function taggingPipeline() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
-  const botAccounts: BotAccount[] = await prisma.botAccount.findMany({
-    include: { subAccounts: true }
-  });
-
-
-
-  for (let botAccount of botAccounts) {
-    // const { subAccounts } = botAccount as any
-    // await Promise.all(subAccounts.map(handleTokenRefresh))
-    const existingCalls = await prisma.phoneCall.findMany({
-      where: {
-        callTime: {
-          gte: today
-        }
-      }
-    })
-    const phoneCalls = await fetchBotAccountAudioFiles(botAccount, directoryPath, existingCalls)
-    await prisma.phoneCall.createMany({ data: phoneCalls, skipDuplicates: true })
-  }
-
 
   let subAccounts: SubAccount[] = await prisma.subAccount.findMany();
   for (let subAccount of subAccounts) {
@@ -326,15 +303,13 @@ async function main() {
       const fullTranscription = calls.map(c => c.transcription).join("\n")
 
       let tags: CustomerLabels[] = []
-      let notes
+      let notes = ""
       try {
 
         tags = await tag(fullTranscription);
-        notes = await fill(fullTranscription)
-        notes = notes.reduce((acc, question) => {
-          const [q, a] = Object.entries(question)[0]
-          return acc + `q: ${q}\na: ${a}\n\n`;
-        }, "");
+        notes = questionaireToString(await fill(fullTranscription))
+
+
       } catch (error) {
         console.error(`Failed to get tags for call from ${number} on ${calls[0].callTime.toISOString()}`, error)
         continue;
@@ -376,9 +351,9 @@ async function main() {
 
 
   }
-
 }
 
-main()
+
+
 
 

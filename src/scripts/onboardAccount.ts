@@ -1,8 +1,6 @@
 import { PhoneCall, PrismaClient, SubAccount, } from '@prisma/client'
 import { QuestionCollection, createPromptModule } from 'inquirer';
 
-import generator from "generate-password"
-
 const prisma = new PrismaClient()
 
 
@@ -29,19 +27,6 @@ async function main() {
             type: 'input',
             name: 'botAccountId',
             message: "What's the botAccountId",
-        },
-
-        {
-            type: 'password',
-            name: 'accessToken',
-            message: "What's your access token?",
-            mask: '*',
-        },
-        {
-            type: 'password',
-            name: 'refreshToken',
-            message: "What's your refresh token?",
-            mask: '*',
         },
     ];
 

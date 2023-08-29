@@ -2,6 +2,7 @@ import "dotenv/config"
 
 import { Strategy as OAuth2Strategy, VerifyCallback } from 'passport-oauth2';
 import { PrismaClient, User } from '@prisma/client'
+import { QuestionCollection, createPromptModule } from 'inquirer';
 import express, { Request, Response } from 'express';
 
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
@@ -73,21 +74,52 @@ passport.use(
             console.log('refreshToken', refreshToken)
             // console.log('first', )
 
+            type SubAccountOnBoard = { botAccountId: number, ownerId: number, locationId: string, name:string }
+
+            const questions: QuestionCollection<SubAccountOnBoard> = [
+                {
+                    type: 'input',
+                    name: 'name',
+                    message: "What is the name of this location?"
+                },
+                {
+                    type: 'input',
+                    name: 'locationId',
+                    message: "What's your location ID?",
+                },
+                {
+                    type: 'number',
+                    name: 'ownerId',
+                    message: "What's your owner ID?",
+                },
+
+                {
+                    type: 'number',
+                    name: 'botAccountId',
+                    message: "What's the botAccountId",
+                },
+            ];
+
+            const prompt = createPromptModule()
+            const answers:SubAccountOnBoard  = await prompt(questions)
 
             try {
+
                 await prisma.subAccount.create({
                     data: {
+                        name:answers.name,
+                        locationId: answers.locationId,
+                        ownerId: answers.ownerId ,
+                        accessToken: accessToken,
+                        refreshToken: refreshToken,
+                        botEmail: "",
+                        botPassword: "",
+                        botAccountId: answers.botAccountId
 
-                        accessToken,
-                        refreshToken,
-                        locationId: "",
-                        ownerId: 1,
-                        botEmail: "atlasbot@ses.dnjsolutions.dev",
-                        botPassword: "Atlasbot;93"
                     }
+                });
 
-                })
-
+                console.log('Account information has been saved.');
                 cb(null, {});
             }
             catch (err) {

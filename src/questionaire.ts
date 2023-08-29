@@ -55,25 +55,30 @@ export const fill = async (transcription: string): Promise<Question[]> => {
     const response = await chat.call([
         new SystemChatMessage(
             `You are a bot that answers questions about phone calls to a funeral home.
-You MUST format you answer as a json array.
-Each question should have a corresponding value in the array.
-Wrap strings with double quotes.
+You MUST format you answer as a valid json.
 Answer each question with json type specified after the question.
-If the answer to the question is unknown or wasn't provided, answer null with no quotes.`
+If the answer to the question is unknown or wasn't provided, answer null with no quotes.
+example:
+{
+    "What color is the sky": "The sky is blue",
+    "How many hours are in a day": 24,
+    "Does water boil at 100 degrees celcius": true
+}
+`
         ),
         new HumanChatMessage(message),
     ])
 
 
     //try once to json parse the response from chatGPT, if it fails retry with GPT3.
-    let answerArray = []
+    let answers
     try {
-        answerArray = JSON.parse(response.text)
+        answers = JSON.parse(response.text)
     } catch (error) {
         console.log("failed on ", response.text)
         try {
             const rawJson = await jsonFormatGPT(response.text, "The json should be an array of values.")
-            answerArray = JSON.parse(rawJson)
+            answers = JSON.parse(rawJson)
         } catch (error) {
             console.log("failed again", response.text)
             throw new Error("Received a invalid json response for questions.");
@@ -82,10 +87,18 @@ If the answer to the question is unknown or wasn't provided, answer null with no
     }
 
     // return qs.map((item, index) => ({ ...item, ans: answerArray[index] }));
-    return answerArray;
+    return answers;
 
 
 
+}
+
+export function questionaireToString(questionaire: object):string {
+    let str:string[] = []
+    for (const [key, value] of Object.entries(questionaire)) {
+        str.push(`q: ${key}\na: ${value}\n`)
+    }
+    return str.join("\n")
 }
 
 export enum CustomerLabels {
@@ -100,19 +113,19 @@ export enum CustomerLabels {
 
 export async function tag(transcription: string) {
 
-    async function shopperType(): Promise<CustomerLabels> {
-        const typeResponse = await chat.call([
-            new SystemChatMessage(`You are a bot that answers questions about phone calls to a funeral home.
-If someone has passed away, they are "${CustomerLabels.atNeed}".
-If someone is expected to pass soon(within the next couple of days or months), they are "${CustomerLabels.imminentNeed}".
-If no one is passing soon but the caller is making advanced arrangements, they are "${CustomerLabels.preNeed}"
-Answer with '${CustomerLabels.atNeed}', '${CustomerLabels.imminentNeed}', or '${CustomerLabels.preNeed}' and nothing else.`),
-            new HumanChatMessage(transcription)
-        ])
+    //     async function shopperType(): Promise<CustomerLabels> {
+    //         const typeResponse = await chat.call([
+    //             new SystemChatMessage(`You are a bot that answers questions about phone calls to a funeral home.
+    // If someone has passed away, they are "${CustomerLabels.atNeed}".
+    // If someone is expected to pass soon(within the next couple of days or months), they are "${CustomerLabels.imminentNeed}".
+    // If no one is passing soon but the caller is making advanced arrangements, they are "${CustomerLabels.preNeed}"
+    // Answer with '${CustomerLabels.atNeed}', '${CustomerLabels.imminentNeed}', or '${CustomerLabels.preNeed}' and nothing else.`),
+    //             new HumanChatMessage(transcription)
+    //         ])
 
-        // console.log('typeResponse.text', typeResponse.text)
-        return typeResponse.text as CustomerLabels
-    }
+    //         // console.log('typeResponse.text', typeResponse.text)
+    //         return typeResponse.text as CustomerLabels
+    //     }
 
     let tags: CustomerLabels[] = []
 
@@ -143,13 +156,13 @@ Answer with '${CustomerLabels.atNeed}', '${CustomerLabels.imminentNeed}', or '${
         switch (timelineResponse.text) {
             case CustomerLabels.atNeed:
                 tags.push(CustomerLabels.atNeed)
-                type = await shopperType()
-                tags.push(type)
+                // type = await shopperType()
+                // tags.push(type)
                 break;
             case CustomerLabels.imminentNeed:
                 tags.push(CustomerLabels.imminentNeed)
-                type = await shopperType()
-                tags.push(type)
+                // type = await shopperType()
+                // tags.push(type)
 
                 break;
             case CustomerLabels.preNeed:

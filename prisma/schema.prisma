@@ -27,6 +27,7 @@ model User {
 
 model SubAccount {
   locationId           String      @id @unique
+  name                 String       @default("change me")
   botAccountId         Int? // This will be a foreign key
   botAccount           BotAccount? @relation(fields: [botAccountId], references: [id])
   accessToken          String?

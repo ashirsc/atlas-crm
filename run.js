@@ -29,6 +29,7 @@ schedule.scheduleJob(
       const finishTime = new Date()
       console.log(chalk.blueBright(`Finished run at ${finishTime.toLocaleString('en-US')}`));
       console.log(`child process exited with code ${code}`);
+      console.log('\n\n')
     });
   }
 );
